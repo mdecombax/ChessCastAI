@@ -25,14 +25,15 @@ LANGAGE :
 
 FORMAT DE SORTIE — OBLIGATOIRE :
 Tu dois retourner UNIQUEMENT un tableau JSON valide, sans aucun texte avant ou après. Chaque élément du tableau est un segment du commentaire avec :
-- "startMove" : l'index du demi-coup (0-based) à partir duquel ce segment est pertinent. 0 = position initiale. 1 = après le 1er demi-coup (premier coup des blancs). 2 = après le 2e demi-coup, etc. Utilise l'index du premier coup dont tu parles dans ce segment. Pour les transitions ("avançons jusqu'au coup X"), utilise l'index du coup de destination.
+- "startMove" : l'index du demi-coup (0-based) à partir duquel ce segment est pertinent. 0 = position initiale. 1 = après le 1er demi-coup (premier coup des blancs). 2 = après le 2e demi-coup, etc. IMPORTANT : pour les moments clés, utilise EXACTEMENT la valeur [startMove=X] indiquée dans les annotations Stockfish. Pour les transitions, utilise l'index du coup de destination.
+- "type" : soit "transition" soit "key". "transition" = passage rapide sur des coups sans intérêt (l'échiquier avancera vite). "key" = moment important où l'échiquier se fige et tu expliques (blunder, mistake, bon coup).
 - "text" : le texte parlé de ce segment
 
 Exemple de format attendu :
 [
-  {"startMove": 0, "text": "Bon, les premiers coups sont classiques."},
-  {"startMove": 15, "text": "Au coup numéro huit, attention ! Le Cavalier va en g cinq... et là c'est une grosse erreur."},
-  {"startMove": 28, "text": "Et voilà, la partie se termine. La leçon principale : toujours vérifier si tes pièces sont en sécurité."}
+  {"startMove": 0, "type": "transition", "text": "Bon, les premiers coups sont classiques."},
+  {"startMove": 15, "type": "key", "text": "Au coup numéro huit, attention ! Le Cavalier va en g cinq... et là c'est une grosse erreur. Pourquoi ? Parce que ce Cavalier n'est plus défendu par rien. L'adversaire peut le prendre gratuitement avec le Fou. Il fallait jouer Cavalier en e cinq, bien centralisé et protégé."},
+  {"startMove": 28, "type": "transition", "text": "Et voilà, la partie se termine. Retiens : toujours vérifier si tes pièces sont en sécurité."}
 ]
 
 Règles de format pour la synthèse vocale (ElevenLabs) — s'appliquent au champ "text" de chaque segment :
@@ -63,20 +64,34 @@ export async function generateCast(pgn, annotationsText = null) {
 
   // Parser le JSON retourné par Claude
   let segments;
-  try {
-    // Claude peut entourer le JSON de backticks ou d'espaces
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
-    segments = JSON.parse(cleaned);
-    if (!Array.isArray(segments)) throw new Error('Not an array');
-    // Valider que chaque segment a les bons champs
-    segments = segments.map(s => ({
+
+  function parseSegments(str) {
+    const parsed = JSON.parse(str);
+    if (!Array.isArray(parsed)) throw new Error('Not an array');
+    return parsed.map(s => ({
       startMove: typeof s.startMove === 'number' ? s.startMove : 0,
-      text: String(s.text ?? ''),
-    }));
-  } catch (e) {
-    console.warn('[llm] Parsing JSON segments échoué, fallback texte brut:', e.message);
-    // Fallback : traiter tout comme un seul segment
-    segments = [{ startMove: 0, text: raw }];
+      type: s.type === 'key' ? 'key' : 'transition',
+      text: String(s.text ?? '').trim(),
+    })).filter(s => s.text.length > 0);
+  }
+
+  try {
+    // Tentative 1 : supprimer les backticks et parser directement
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+    segments = parseSegments(cleaned);
+  } catch (e1) {
+    try {
+      // Tentative 2 : extraire le premier tableau JSON dans le texte
+      const match = raw.match(/\[[\s\S]*\]/);
+      if (!match) throw new Error('No JSON array found');
+      segments = parseSegments(match[0]);
+      console.warn('[llm] Parsing JSON : utilisé extraction de tableau');
+    } catch (e2) {
+      // Fallback final : log détaillé + segment vide pour éviter d'envoyer du JSON à ElevenLabs
+      console.error('[llm] Parsing JSON échoué (tentatives 1+2):', e1.message, '|', e2.message);
+      console.error('[llm] Raw output (200 chars):', raw.slice(0, 200));
+      segments = [{ startMove: 0, type: 'transition', text: 'Commentaire non disponible.' }];
+    }
   }
 
   const text = segments.map(s => s.text).join(' ');

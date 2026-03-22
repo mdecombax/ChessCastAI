@@ -36,6 +36,7 @@ router.post('/', async (req, res, next) => {
 
         return {
           startMove: seg.startMove,
+          type: seg.type ?? 'transition',
           text: seg.text,
           startTime,
           endTime,

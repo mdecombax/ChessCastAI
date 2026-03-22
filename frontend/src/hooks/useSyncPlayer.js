@@ -31,13 +31,20 @@ export default function useSyncPlayer({ audioUrl, fens, segmentTimings }) {
 
   const activeSegment = segmentTimings?.[activeSegmentIndex] ?? null;
 
-  // Calculer l'index de FEN courant
-  // Pour un segment multi-coups, on interpole entre startMove du segment actif
-  // et le startMove du segment suivant, proportionnellement au temps écoulé.
+  // Calculer l'index de FEN courant.
+  // Segments "transition" → le board interpole vers le prochain segment (avance vite).
+  // Segments "key" → le board reste fixe sur startMove pendant l'explication.
   const currentFenIndex = useMemo(() => {
     if (!activeSegment || !fens || fens.length === 0) return 0;
 
     const segStart = activeSegment.startMove ?? 0;
+
+    // Moment clé : board figé sur la position expliquée
+    if (activeSegment.type === 'key') {
+      return Math.min(segStart, fens.length - 1);
+    }
+
+    // Transition : interpoler rapidement jusqu'au prochain segment
     const nextSegment = segmentTimings?.[activeSegmentIndex + 1];
     const segEnd = nextSegment ? (nextSegment.startMove ?? segStart) : (fens.length - 1);
 

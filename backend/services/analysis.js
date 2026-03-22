@@ -147,7 +147,7 @@ export async function analyzePGN(pgn) {
     const color = move.color === 'w' ? 'blanc' : 'noir';
 
     if (!evalBefore || !evalAfter) {
-      return { moveNumber, color, san: move.san, classification: 'normal' };
+      return { moveNumber, color, halfMoveIndex: i + 1, san: move.san, from: move.from, to: move.to, bestMove: null, classification: 'normal' };
     }
 
     const cpBefore = evalBefore.score;
@@ -168,7 +168,11 @@ export async function analyzePGN(pgn) {
     return {
       moveNumber,
       color,
+      halfMoveIndex: i + 1,
       san: move.san,
+      from: move.from,
+      to: move.to,
+      bestMove: evalBefore.bestmove ?? null,
       classification: classifyMove(evalDropRounded, isBestMove),
       evalDrop: evalDropRounded,
       cpBefore,
@@ -198,7 +202,8 @@ export function formatAnnotationsForPrompt(annotations) {
     const evalInfo = m.evalDrop !== undefined && m.classification !== 'best'
       ? ` — perte de ${m.evalDrop} centipions`
       : '';
-    return `  - Coup ${m.moveNumber} (${m.color}, ${m.san}) : ${label}${evalInfo}`;
+    // halfMoveIndex = valeur exacte à utiliser comme startMove dans le JSON de sortie
+    return `  - Coup ${m.moveNumber} (${m.color}, ${m.san}) [startMove=${m.halfMoveIndex}] : ${label}${evalInfo}`;
   });
 
   return `Analyse Stockfish des moments clés de la partie :

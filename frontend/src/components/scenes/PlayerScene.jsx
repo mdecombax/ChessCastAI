@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { T } from '../../theme.js';
 import ChessboardSync from '../ui/ChessboardSync.jsx';
@@ -6,6 +6,7 @@ import AnalysisDrawer from '../AnalysisDrawer.jsx';
 import CommentaryDrawer from '../CommentaryDrawer.jsx';
 import PremiumButton from '../ui/PremiumButton.jsx';
 import useSyncPlayer from '../../hooks/useSyncPlayer.js';
+import useBoardAnnotations from '../../hooks/useBoardAnnotations.js';
 
 function formatTime(s) {
   if (!isFinite(s) || s < 0) return '0:00';
@@ -31,7 +32,61 @@ export default function PlayerScene({ audioUrl, castText, annotations, game, fen
     activeSegment,
   } = useSyncPlayer({ audioUrl, fens, segmentTimings });
 
+  const { arrows, squareStyles } = useBoardAnnotations({ annotations, currentFenIndex, activeSegment });
+
   const seekBarRef = useRef(null);
+
+  // Injecter l'animation blink une seule fois
+  useEffect(() => {
+    if (document.getElementById('autocast-blink-style')) return;
+    const style = document.createElement('style');
+    style.id = 'autocast-blink-style';
+    style.textContent = '@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }';
+    document.head.appendChild(style);
+  }, []);
+
+  // Découpe le texte en lignes de ~55 chars (aux coupures de mots)
+  function splitLines(text, maxChars = 55) {
+    const words = (text ?? '').split(' ');
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+      if (cur && (cur + ' ' + w).length > maxChars) { lines.push(cur); cur = w; }
+      else cur = cur ? cur + ' ' + w : w;
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  // Sous-titres synchronisés : une seule ligne affichée à la fois
+  // dérivée de currentTime → pause = texte gelé, seek = position correcte
+  const { subtitleLine, isTyping } = useMemo(() => {
+    const text = activeSegment?.text ?? '';
+    if (!text) return { subtitleLine: '', isTyping: false };
+
+    const segStart = activeSegment?.startTime ?? 0;
+    const segEnd = activeSegment?.endTime ?? segStart + 1;
+    const segDuration = Math.max(0.01, segEnd - segStart);
+    const elapsed = Math.max(0, currentTime - segStart);
+    const ratio = Math.min(1, elapsed / segDuration);
+    const revealedChars = Math.floor(ratio * text.length);
+
+    // Trouver sur quelle ligne on se trouve
+    const lines = splitLines(text);
+    let charPos = 0;
+    for (const line of lines) {
+      const lineEnd = charPos + line.length;
+      if (revealedChars <= lineEnd) {
+        // On est sur cette ligne : afficher les chars révélés depuis le début de la ligne
+        const lineReveal = revealedChars - charPos;
+        return { subtitleLine: line.slice(0, lineReveal), isTyping: revealedChars < text.length };
+      }
+      charPos = lineEnd + 1; // +1 pour l'espace entre lignes
+    }
+    // Fin du segment : afficher la dernière ligne complète
+    const lastLine = lines[lines.length - 1] ?? '';
+    return { subtitleLine: lastLine, isTyping: false };
+  }, [currentTime, activeSegment]);
 
   function handleSeekClick(e) {
     if (!seekBarRef.current) return;
@@ -89,7 +144,7 @@ export default function PlayerScene({ audioUrl, castText, annotations, game, fen
 
         {/* Échiquier */}
         <motion.div variants={itemVariants} style={{ display: 'flex', justifyContent: 'center' }}>
-          <ChessboardSync fen={currentFen} moveIndex={currentFenIndex} />
+          <ChessboardSync fen={currentFen} moveIndex={currentFenIndex} arrows={arrows} squareStyles={squareStyles} />
         </motion.div>
 
         {/* Sous-titre du segment actif */}
@@ -113,7 +168,22 @@ export default function PlayerScene({ audioUrl, castText, annotations, game, fen
             margin: 0,
             fontStyle: 'italic',
           }}>
-            {activeSegment?.text ?? castText ?? ''}
+            {subtitleLine || (
+              <span style={{ color: T.textMuted, fontStyle: 'normal', fontSize: 13 }}>
+                Appuyez sur lecture pour démarrer…
+              </span>
+            )}
+            {isTyping && subtitleLine && (
+              <span style={{
+                display: 'inline-block',
+                width: 2,
+                height: '1em',
+                background: T.gold,
+                marginLeft: 2,
+                verticalAlign: 'text-bottom',
+                animation: 'blink 0.8s step-end infinite',
+              }} />
+            )}
           </p>
         </motion.div>
 

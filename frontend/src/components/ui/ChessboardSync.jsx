@@ -2,7 +2,7 @@ import React from 'react';
 import { Chessboard } from 'react-chessboard';
 import { T } from '../../theme.js';
 
-export default function ChessboardSync({ fen, moveIndex }) {
+export default function ChessboardSync({ fen, moveIndex, arrows, squareStyles }) {
   const boardSize = Math.min(400, (typeof window !== 'undefined' ? window.innerWidth : 400) - 48);
 
   const moveNumber = moveIndex > 0
@@ -29,6 +29,8 @@ export default function ChessboardSync({ fen, moveIndex }) {
           customDarkSquareStyle={{ backgroundColor: '#2d3748' }}
           customLightSquareStyle={{ backgroundColor: '#e8d5a3' }}
           customBoardStyle={{ borderRadius: 0 }}
+          customArrows={arrows ?? []}
+          customSquareStyles={squareStyles ?? {}}
         />
       </div>
 
