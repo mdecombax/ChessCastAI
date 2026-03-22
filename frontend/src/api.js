@@ -26,12 +26,18 @@ export async function fetchCast(pgn, annotations = null) {
   return res.json();
 }
 
-export async function fetchAudio(text) {
+export async function fetchAudio(text, segments = null) {
   const res = await fetch(`${BASE}/audio`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, segments }),
   });
   if (!res.ok) throw new Error(await res.text());
-  return res.blob();
+  const { audio_base64, segmentTimings } = await res.json();
+  const binary = atob(audio_base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes], { type: 'audio/mpeg' });
+  const audioUrl = URL.createObjectURL(blob);
+  return { audioUrl, segmentTimings, audio_base64 };
 }

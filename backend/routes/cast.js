@@ -12,9 +12,14 @@ router.post('/', async (req, res, next) => {
 
     // Étape 1 : Utiliser les annotations pré-calculées ou lancer l'analyse
     let annotations = existingAnnotations ?? null;
+    let fens = null;
     let annotationsText = null;
     try {
-      if (!annotations) annotations = await analyzePGN(pgn);
+      if (!annotations) {
+        const result = await analyzePGN(pgn);
+        annotations = result.annotations;
+        fens = result.fens;
+      }
       annotationsText = formatAnnotationsForPrompt(annotations);
       if (annotationsText) {
         console.log('[cast] Analyse Lichess réussie, annotations transmises au LLM');
@@ -26,8 +31,8 @@ router.post('/', async (req, res, next) => {
     }
 
     // Étape 2 : Génération du commentaire avec Claude
-    const text = await generateCast(pgn, annotationsText);
-    res.json({ text, annotations });
+    const { segments, text } = await generateCast(pgn, annotationsText);
+    res.json({ segments, text, annotations, fens });
   } catch (err) {
     next(err);
   }

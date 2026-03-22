@@ -140,7 +140,7 @@ export async function analyzePGN(pgn) {
   console.log(`[analysis] Terminé en ${((Date.now() - start) / 1000).toFixed(1)}s`);
 
   // Classifier chaque coup
-  return history.map((move, i) => {
+  const annotations = history.map((move, i) => {
     const evalBefore = evals[i];
     const evalAfter = evals[i + 1];
     const moveNumber = Math.floor(i / 2) + 1;
@@ -175,6 +175,8 @@ export async function analyzePGN(pgn) {
       cpAfter,
     };
   });
+
+  return { annotations, fens };
 }
 
 // Formate les annotations pour le prompt LLM

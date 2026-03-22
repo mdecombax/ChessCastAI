@@ -23,13 +23,25 @@ LANGAGE :
 - N'utilise jamais de jargon sans l'expliquer immédiatement.
 - Ton chaleureux, encourageant, jamais condescendant.
 
-Règles de format pour la synthèse vocale (ElevenLabs) :
+FORMAT DE SORTIE — OBLIGATOIRE :
+Tu dois retourner UNIQUEMENT un tableau JSON valide, sans aucun texte avant ou après. Chaque élément du tableau est un segment du commentaire avec :
+- "startMove" : l'index du demi-coup (0-based) à partir duquel ce segment est pertinent. 0 = position initiale. 1 = après le 1er demi-coup (premier coup des blancs). 2 = après le 2e demi-coup, etc. Utilise l'index du premier coup dont tu parles dans ce segment. Pour les transitions ("avançons jusqu'au coup X"), utilise l'index du coup de destination.
+- "text" : le texte parlé de ce segment
+
+Exemple de format attendu :
+[
+  {"startMove": 0, "text": "Bon, les premiers coups sont classiques."},
+  {"startMove": 15, "text": "Au coup numéro huit, attention ! Le Cavalier va en g cinq... et là c'est une grosse erreur."},
+  {"startMove": 28, "text": "Et voilà, la partie se termine. La leçon principale : toujours vérifier si tes pièces sont en sécurité."}
+]
+
+Règles de format pour la synthèse vocale (ElevenLabs) — s'appliquent au champ "text" de chaque segment :
 - Écris tous les nombres en toutes lettres (exemple : "coup numéro dix-huit").
 - N'utilise jamais de caractères spéciaux comme { } [ ] < > # * _ qui sont mal prononcés.
 - Utilise la ponctuation pour contrôler le rythme : virgule pour une courte pause, point pour une pause pleine, points de suspension pour l'hésitation ou la tension.
 - Évite les abréviations : écris "Cavalier", "Tour", "Fou", "Dame", "Roi" en entier.
 - Ne mets pas de didascalies, de noms de locuteurs ou de titres de section : uniquement le texte parlé.
-- LONGUEUR STRICTE : le texte doit durer exactement deux minutes à voix haute, soit deux cent vingt à deux cent cinquante mots maximum. Sois concis : chaque mot doit être utile. Si tu dois choisir entre expliquer deux erreurs en profondeur ou cinq erreurs superficiellement, choisis les deux ou trois erreurs les plus importantes et explique-les bien.`;
+- LONGUEUR STRICTE : le total de tous les segments doit durer exactement deux minutes à voix haute, soit deux cent vingt à deux cent cinquante mots maximum. Sois concis : chaque mot doit être utile.`;
 
 
 export async function generateCast(pgn, annotationsText = null) {
@@ -46,7 +58,27 @@ export async function generateCast(pgn, annotationsText = null) {
     messages: [{ role: 'user', content: userContent }],
   });
 
-  const text = message.content?.[0]?.text;
-  if (!text) throw new Error('LLM returned empty response');
-  return text;
+  const raw = message.content?.[0]?.text;
+  if (!raw) throw new Error('LLM returned empty response');
+
+  // Parser le JSON retourné par Claude
+  let segments;
+  try {
+    // Claude peut entourer le JSON de backticks ou d'espaces
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+    segments = JSON.parse(cleaned);
+    if (!Array.isArray(segments)) throw new Error('Not an array');
+    // Valider que chaque segment a les bons champs
+    segments = segments.map(s => ({
+      startMove: typeof s.startMove === 'number' ? s.startMove : 0,
+      text: String(s.text ?? ''),
+    }));
+  } catch (e) {
+    console.warn('[llm] Parsing JSON segments échoué, fallback texte brut:', e.message);
+    // Fallback : traiter tout comme un seul segment
+    segments = [{ startMove: 0, text: raw }];
+  }
+
+  const text = segments.map(s => s.text).join(' ');
+  return { segments, text };
 }

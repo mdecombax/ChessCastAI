@@ -19,7 +19,7 @@ export default function App() {
   const pipeline = usePipeline();
 
   if (typeof window !== 'undefined') {
-    window.debug = { scene, username, games, selectedGame, pipeline };
+    window.debug = { scene, username, games, selectedGame, pipeline, setScene, setSelectedGame };
   }
 
   const handleFetchGames = useCallback(async (uname) => {
@@ -88,6 +88,9 @@ export default function App() {
       audioUrl: pipeline.audioUrl,
       castText: pipeline.castText,
       annotations: pipeline.annotations,
+      fens: pipeline.fens,
+      segments: pipeline.segments,
+      segmentTimings: pipeline.segmentTimings,
       game: selectedGame,
       onRestart: handleRestart,
     },
