@@ -18,11 +18,10 @@ export async function getRecentGames(username) {
   const games = (gamesData.games || []).slice(-10).map((game) => ({
     url: game.url,
     pgn: game.pgn,
-    timeClass: game.time_class,
-    white: game.white?.username,
-    black: game.black?.username,
-    result: game.white?.result,
-    endTime: game.end_time,
+    time_class: game.time_class,
+    white: { username: game.white?.username, result: game.white?.result },
+    black: { username: game.black?.username, result: game.black?.result },
+    end_time: game.end_time,
   }));
 
   return games;
