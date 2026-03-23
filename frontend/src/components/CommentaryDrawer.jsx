@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { T } from '../theme.js';
+import { useLang } from '../LanguageContext.jsx';
 
 export default function CommentaryDrawer({ text }) {
   const [open, setOpen] = useState(false);
+  const { t } = useLang();
 
   if (!text) return null;
 
@@ -40,7 +42,7 @@ export default function CommentaryDrawer({ text }) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          Lire le commentaire
+          {t.read_commentary}
         </span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

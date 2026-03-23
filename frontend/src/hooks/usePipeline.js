@@ -111,7 +111,8 @@ export default function usePipeline() {
     let segmentsData = null;
     let text = '';
     try {
-      const data = await fetchCast(game.pgn, analysisData);
+      const lang = (() => { try { return localStorage.getItem('lang') || 'fr'; } catch { return 'fr'; } })();
+      const data = await fetchCast(game.pgn, analysisData, lang);
       if (data.annotations) setAnnotations(data.annotations);
       if (data.fens) { fensData = data.fens; setFens(data.fens); }
       segmentsData = data.segments ?? null;
@@ -129,7 +130,8 @@ export default function usePipeline() {
     // Étape 3 : Audio ElevenLabs
     setStepStatus({ analyze: 'done', cast: 'done', audio: 'active' });
     try {
-      const { audioUrl: url, segmentTimings: timings, audio_base64 } = await fetchAudio(text, segmentsData);
+      const lang = (() => { try { return localStorage.getItem('lang') || 'fr'; } catch { return 'fr'; } })();
+      const { audioUrl: url, segmentTimings: timings, audio_base64 } = await fetchAudio(text, segmentsData, lang);
       setAudioUrl(url);
       setSegmentTimings(timings);
       setStepStatus({ analyze: 'done', cast: 'done', audio: 'done' });

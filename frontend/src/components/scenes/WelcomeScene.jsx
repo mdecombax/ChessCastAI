@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { T } from '../../theme.js';
 import PremiumInput from '../ui/PremiumInput.jsx';
+import { useLang } from '../../LanguageContext.jsx';
 
 // Échiquier décoratif en arrière-plan
 function ChessboardBg() {
@@ -86,6 +87,7 @@ function ChessKing() {
 
 export default function WelcomeScene({ onSubmit, loading, error }) {
   const [value, setValue] = useState('');
+  const { t } = useLang();
 
   const containerVariants = {
     initial: {},
@@ -173,10 +175,10 @@ export default function WelcomeScene({ onSubmit, loading, error }) {
             letterSpacing: '0.01em',
           }}
         >
-          Commentaire audio IA pour tes parties.
+          {t.welcome_subtitle}
           <br />
           <span style={{ color: T.textMuted, fontSize: 14 }}>
-            Analyse Stockfish · Narration Claude · Voix ElevenLabs
+            {t.welcome_tech}
           </span>
         </motion.p>
 
@@ -185,7 +187,7 @@ export default function WelcomeScene({ onSubmit, loading, error }) {
             value={value}
             onChange={setValue}
             onSubmit={onSubmit}
-            placeholder="Pseudo Chess.com"
+            placeholder={t.welcome_placeholder}
             loading={loading}
             autoFocus
           />
@@ -224,7 +226,7 @@ export default function WelcomeScene({ onSubmit, loading, error }) {
         >
           <div style={{ flex: 1, height: 1, background: T.border }} />
           <span style={{ color: T.textMuted, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: T.fontBody }}>
-            Partie après partie
+            {t.welcome_divider}
           </span>
           <div style={{ flex: 1, height: 1, background: T.border }} />
         </motion.div>

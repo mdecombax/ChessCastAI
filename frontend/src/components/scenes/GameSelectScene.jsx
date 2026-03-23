@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { T } from '../../theme.js';
 import GameCard from '../ui/GameCard.jsx';
 import PremiumButton from '../ui/PremiumButton.jsx';
+import { useLang } from '../../LanguageContext.jsx';
 
 function SkeletonCard() {
   return (
@@ -21,6 +22,7 @@ function SkeletonCard() {
 
 export default function GameSelectScene({ username, games, selectedGame, onSelect, onLaunch, onBack }) {
   const loading = games.length === 0;
+  const { t } = useLang();
 
   return (
     <div style={{
@@ -75,7 +77,7 @@ export default function GameSelectScene({ username, games, selectedGame, onSelec
 
         <div>
           <div style={{ fontFamily: T.fontBody, fontSize: 12, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>
-            Parties de
+            {t.games_of}
           </div>
           <div style={{ fontFamily: T.fontDisplay, fontSize: 22, color: T.textPrimary, fontWeight: 600 }}>
             {username}
@@ -106,7 +108,7 @@ export default function GameSelectScene({ username, games, selectedGame, onSelec
               animate={{ opacity: 1 }}
               transition={{ delay: 0.1 }}
             >
-              {games.length} dernières parties
+              {t.last_games(games.length)}
             </motion.div>
             {games.map((game, i) => (
               <motion.div
@@ -146,7 +148,7 @@ export default function GameSelectScene({ username, games, selectedGame, onSelec
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, color: T.textMuted, fontFamily: T.fontBody, marginBottom: 2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                  Partie sélectionnée
+                  {t.selected_game}
                 </div>
                 <div style={{ fontSize: 14, color: T.textPrimary, fontFamily: T.fontBody, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {selectedGame.white?.username} vs {selectedGame.black?.username}
@@ -156,7 +158,7 @@ export default function GameSelectScene({ username, games, selectedGame, onSelec
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
-                Lancer le cast
+                {t.launch_cast}
               </PremiumButton>
             </div>
           </motion.div>

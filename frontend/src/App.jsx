@@ -7,8 +7,11 @@ import WelcomeScene from './components/scenes/WelcomeScene.jsx';
 import GameSelectScene from './components/scenes/GameSelectScene.jsx';
 import GenerationScene from './components/scenes/GenerationScene.jsx';
 import PlayerScene from './components/scenes/PlayerScene.jsx';
+import { LanguageProvider, useLang } from './LanguageContext.jsx';
+import LanguageSwitcher from './components/ui/LanguageSwitcher.jsx';
 
-export default function App() {
+function AppInner() {
+  const { t } = useLang();
   const [scene, setScene] = useState('welcome'); // welcome | select | generate | player
   const [username, setUsername] = useState('');
   const [games, setGames] = useState([]);
@@ -34,7 +37,7 @@ export default function App() {
       setGames(data.games || []);
       setScene('select');
     } catch (err) {
-      setGamesError(`Impossible de charger les parties : ${err.message}`);
+      setGamesError(t.load_error(err.message));
     } finally {
       setLoadingGames(false);
     }
@@ -92,12 +95,14 @@ export default function App() {
       segments: pipeline.segments,
       segmentTimings: pipeline.segmentTimings,
       game: selectedGame,
+      username,
       onRestart: handleRestart,
     },
   };
 
   return (
     <div style={{ minHeight: '100dvh', position: 'relative' }}>
+      <LanguageSwitcher />
       <AnimatePresence mode="wait">
         {scene === 'welcome' && (
           <SceneManager key="welcome">
@@ -121,5 +126,13 @@ export default function App() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppInner />
+    </LanguageProvider>
   );
 }

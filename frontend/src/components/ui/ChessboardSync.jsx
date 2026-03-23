@@ -1,13 +1,16 @@
 import React from 'react';
 import { Chessboard } from 'react-chessboard';
 import { T } from '../../theme.js';
+import { useLang } from '../../LanguageContext.jsx';
 
-export default function ChessboardSync({ fen, moveIndex, arrows, squareStyles }) {
-  const boardSize = Math.min(400, (typeof window !== 'undefined' ? window.innerWidth : 400) - 48);
+export default function ChessboardSync({ fen, moveIndex, arrows, squareStyles, size, orientation = 'white' }) {
+  const boardSize = size ?? Math.min(400, (typeof window !== 'undefined' ? window.innerWidth : 400) - 48);
+  const { t } = useLang();
 
+  const n = Math.ceil(moveIndex / 2);
   const moveNumber = moveIndex > 0
-    ? `Coup ${Math.ceil(moveIndex / 2)} — ${moveIndex % 2 === 1 ? 'blancs' : 'noirs'}`
-    : 'Position initiale';
+    ? (moveIndex % 2 === 1 ? t.move_white(n) : t.move_black(n))
+    : t.initial_position;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
@@ -23,6 +26,7 @@ export default function ChessboardSync({ fen, moveIndex, arrows, squareStyles })
         <Chessboard
           position={fen ?? 'start'}
           boardWidth={boardSize}
+          boardOrientation={orientation}
           areArrowsAllowed={false}
           arePiecesDraggable={false}
           animationDuration={150}

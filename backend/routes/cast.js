@@ -7,7 +7,7 @@ const router = Router();
 // POST /api/cast — body: { pgn }
 router.post('/', async (req, res, next) => {
   try {
-    const { pgn, annotations: existingAnnotations } = req.body;
+    const { pgn, annotations: existingAnnotations, lang } = req.body;
     if (!pgn) return res.status(400).json({ error: 'PGN is required' });
 
     // Étape 1 : Utiliser les annotations pré-calculées ou lancer l'analyse
@@ -31,7 +31,7 @@ router.post('/', async (req, res, next) => {
     }
 
     // Étape 2 : Génération du commentaire avec Claude
-    const { segments, text } = await generateCast(pgn, annotationsText);
+    const { segments, text } = await generateCast(pgn, annotationsText, lang);
     res.json({ segments, text, annotations, fens });
   } catch (err) {
     next(err);

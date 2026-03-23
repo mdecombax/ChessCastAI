@@ -7,10 +7,10 @@ const router = Router();
 // Retourne JSON : { audio_base64, segmentTimings: [{ startMove, startTime, endTime }] }
 router.post('/', async (req, res, next) => {
   try {
-    const { text, segments } = req.body;
+    const { text, segments, lang } = req.body;
     if (!text) return res.status(400).json({ error: 'Text is required' });
 
-    const { audioBuffer, alignment } = await textToAudioWithTimestamps(text);
+    const { audioBuffer, alignment } = await textToAudioWithTimestamps(text, lang);
 
     // Calculer les timings de chaque segment en mappant les offsets de caractères
     let segmentTimings = [];

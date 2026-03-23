@@ -16,21 +16,21 @@ export async function fetchAnalysis(pgn) {
   return res.json();
 }
 
-export async function fetchCast(pgn, annotations = null) {
+export async function fetchCast(pgn, annotations = null, lang = 'fr') {
   const res = await fetch(`${BASE}/cast`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pgn, annotations }),
+    body: JSON.stringify({ pgn, annotations, lang }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
-export async function fetchAudio(text, segments = null) {
+export async function fetchAudio(text, segments = null, lang = 'fr') {
   const res = await fetch(`${BASE}/audio`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, segments }),
+    body: JSON.stringify({ text, segments, lang }),
   });
   if (!res.ok) throw new Error(await res.text());
   const { audio_base64, segmentTimings } = await res.json();

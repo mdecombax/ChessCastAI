@@ -3,45 +3,36 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { T } from '../../theme.js';
 import ProgressBar from '../ui/ProgressBar.jsx';
 import PremiumButton from '../ui/PremiumButton.jsx';
+import { useLang } from '../../LanguageContext.jsx';
 
-const STEPS = [
-  {
-    key: 'analyze',
-    label: 'Analyse Stockfish',
-    sublabel: 'Classification de chaque coup',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-    ),
-    doneLabel: 'Analyse terminée',
-  },
-  {
-    key: 'cast',
-    label: 'Rédaction du commentaire',
-    sublabel: 'Narration sportive par Claude',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-      </svg>
-    ),
-    doneLabel: 'Commentaire rédigé',
-  },
-  {
-    key: 'audio',
-    label: 'Synthèse vocale',
-    sublabel: 'Voix par ElevenLabs',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" />
-      </svg>
-    ),
-    doneLabel: 'Audio prêt',
-  },
-];
+const STEP_ICONS = {
+  analyze: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  ),
+  cast: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </svg>
+  ),
+  audio: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  ),
+};
 
-function StepItem({ step, status, error, index }) {
+function getSteps(t) {
+  return [
+    { key: 'analyze', label: t.step_analyze_label, sublabel: t.step_analyze_sublabel, icon: STEP_ICONS.analyze, doneLabel: t.step_analyze_done },
+    { key: 'cast',    label: t.step_cast_label,    sublabel: t.step_cast_sublabel,    icon: STEP_ICONS.cast,    doneLabel: t.step_cast_done },
+    { key: 'audio',   label: t.step_audio_label,   sublabel: t.step_audio_sublabel,   icon: STEP_ICONS.audio,   doneLabel: t.step_audio_done },
+  ];
+}
+
+function StepItem({ step, status, error, index, isLast, inProgressLabel }) {
   const isActive = status === 'active';
   const isDone = status === 'done';
   const isError = status === 'error';
@@ -102,7 +93,7 @@ function StepItem({ step, status, error, index }) {
         </motion.div>
 
         {/* Ligne verticale (sauf dernier) */}
-        {index < STEPS.length - 1 && (
+        {!isLast && (
           <div style={{
             width: 1,
             flex: 1,
@@ -117,7 +108,7 @@ function StepItem({ step, status, error, index }) {
       </div>
 
       {/* Contenu */}
-      <div style={{ flex: 1, paddingBottom: index < STEPS.length - 1 ? 28 : 0 }}>
+      <div style={{ flex: 1, paddingBottom: !isLast ? 28 : 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
           <span style={{
             fontFamily: T.fontBody,
@@ -141,7 +132,7 @@ function StepItem({ step, status, error, index }) {
               animate={{ opacity: [1, 0.5, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             >
-              en cours
+              {inProgressLabel}
             </motion.span>
           )}
         </div>
@@ -180,6 +171,8 @@ function StepItem({ step, status, error, index }) {
 export default function GenerationScene({ game, pipeline, onComplete, onBack }) {
   const { stepStatus, stepError, runFullPipeline } = pipeline;
   const hasRun = useRef(false);
+  const { t } = useLang();
+  const STEPS = getSteps(t);
 
   useEffect(() => {
     if (!hasRun.current && game) {
@@ -211,7 +204,7 @@ export default function GenerationScene({ game, pipeline, onComplete, onBack }) 
         style={{ marginBottom: 48 }}
       >
         <div style={{ fontSize: 12, color: T.textMuted, fontFamily: T.fontBody, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
-          Génération en cours
+          {t.generating}
         </div>
         <h2 style={{
           fontFamily: T.fontDisplay,
@@ -234,6 +227,8 @@ export default function GenerationScene({ game, pipeline, onComplete, onBack }) 
             status={stepStatus[step.key]}
             error={stepError[step.key]}
             index={i}
+            isLast={i === STEPS.length - 1}
+            inProgressLabel={t.in_progress}
           />
         ))}
       </div>
@@ -248,13 +243,13 @@ export default function GenerationScene({ game, pipeline, onComplete, onBack }) 
             style={{ marginTop: 32, display: 'flex', gap: 12 }}
           >
             <PremiumButton variant="ghost" onClick={onBack} style={{ flex: 1 }}>
-              ← Retour
+              {t.back}
             </PremiumButton>
             <PremiumButton
               onClick={() => { hasRun.current = false; runFullPipeline(game, onComplete); }}
               style={{ flex: 1 }}
             >
-              Réessayer
+              {t.retry}
             </PremiumButton>
           </motion.div>
         )}

@@ -1,11 +1,6 @@
 import React from 'react';
 import { T } from '../../theme.js';
-
-const RESULT_CONFIG = {
-  win:  { label: 'Victoire',  color: T.success,  bg: T.successBg,  border: T.successBorder },
-  loss: { label: 'Défaite',   color: T.error,    bg: T.errorBg,    border: T.errorBorder },
-  draw: { label: 'Nulle',     color: T.textGold, bg: T.goldGlow,   border: T.borderActive },
-};
+import { useLang } from '../../LanguageContext.jsx';
 
 const CLASS_CONFIG = {
   blunder:    { label: '??', color: '#ef4444', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.25)' },
@@ -15,6 +10,12 @@ const CLASS_CONFIG = {
 };
 
 export function ResultBadge({ result }) {
+  const { t } = useLang();
+  const RESULT_CONFIG = {
+    win:  { label: t.result_win,  color: T.success,  bg: T.successBg,  border: T.successBorder },
+    loss: { label: t.result_loss, color: T.error,    bg: T.errorBg,    border: T.errorBorder },
+    draw: { label: t.result_draw, color: T.textGold, bg: T.goldGlow,   border: T.borderActive },
+  };
   const cfg = RESULT_CONFIG[result] ?? { label: result, color: T.textSecondary, bg: 'transparent', border: T.border };
   return (
     <span style={{
@@ -58,8 +59,9 @@ export function ClassBadge({ classification }) {
 
 export function ClassChip({ count, classification }) {
   const cfg = CLASS_CONFIG[classification];
+  const { t } = useLang();
   if (!cfg || count === 0) return null;
-  const labels = { blunder: 'Blunder', mistake: 'Erreur', inaccuracy: 'Imprécision', best: 'Excellent' };
+  const labels = { blunder: t.badge_blunder, mistake: t.badge_mistake, inaccuracy: t.badge_inaccuracy, best: t.badge_best };
   return (
     <span style={{
       display: 'inline-flex',

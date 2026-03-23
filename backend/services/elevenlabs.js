@@ -29,8 +29,10 @@ export async function textToAudio(text) {
   return Buffer.from(response.data);
 }
 
-export async function textToAudioWithTimestamps(text) {
-  const voiceId = process.env.ELEVENLABS_VOICE_ID;
+export async function textToAudioWithTimestamps(text, lang = 'fr') {
+  const voiceId = lang === 'es'
+    ? (process.env.ELEVENLABS_VOICE_ID_ES || process.env.ELEVENLABS_VOICE_ID)
+    : process.env.ELEVENLABS_VOICE_ID;
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!voiceId) throw new Error('ELEVENLABS_VOICE_ID is not set');
   if (!apiKey) throw new Error('ELEVENLABS_API_KEY is not set');

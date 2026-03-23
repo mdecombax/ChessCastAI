@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { T } from '../theme.js';
 import { ClassChip, ClassBadge } from './ui/Badge.jsx';
+import { useLang } from '../LanguageContext.jsx';
 
 const CLASS_CONFIG = {
   blunder:    { color: '#ef4444', border: 'rgba(239,68,68,0.25)',   bg: 'rgba(239,68,68,0.05)' },
@@ -14,7 +15,7 @@ function countBy(annotations, color, cls) {
   return annotations.filter(a => a.color === color && a.classification === cls).length;
 }
 
-function PlayerSummary({ label, annotations, color }) {
+function PlayerSummary({ label, annotations, color, noErrorsLabel }) {
   return (
     <div style={{ flex: 1 }}>
       <div style={{ fontFamily: T.fontBody, fontWeight: 500, fontSize: 13, color: T.textSecondary, marginBottom: 8 }}>
@@ -26,7 +27,7 @@ function PlayerSummary({ label, annotations, color }) {
           return count > 0 ? <ClassChip key={cls} count={count} classification={cls} /> : null;
         })}
         {['blunder', 'mistake', 'inaccuracy'].every(cls => countBy(annotations, color, cls) === 0) && (
-          <span style={{ fontSize: 12, color: T.textMuted, fontFamily: T.fontBody }}>Aucune erreur</span>
+          <span style={{ fontSize: 12, color: T.textMuted, fontFamily: T.fontBody }}>{noErrorsLabel}</span>
         )}
       </div>
     </div>
@@ -35,12 +36,13 @@ function PlayerSummary({ label, annotations, color }) {
 
 export default function AnalysisDrawer({ annotations, game }) {
   const [open, setOpen] = useState(false);
+  const { t } = useLang();
 
   if (!annotations || annotations.length === 0) return null;
 
   const keyMoves = annotations.filter(a => a.classification !== 'normal');
-  const whiteName = game?.white?.username ?? 'Blanc';
-  const blackName = game?.black?.username ?? 'Noir';
+  const whiteName = game?.white?.username ?? t.white_fallback;
+  const blackName = game?.black?.username ?? t.black_fallback;
 
   return (
     <div>
@@ -75,7 +77,7 @@ export default function AnalysisDrawer({ annotations, game }) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
           </svg>
-          Analyse Stockfish
+          {t.stockfish_analysis}
         </span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -102,8 +104,8 @@ export default function AnalysisDrawer({ annotations, game }) {
             }}>
               {/* Résumé joueurs */}
               <div style={{ display: 'flex', gap: 24, marginBottom: keyMoves.length > 0 ? 20 : 0 }}>
-                <PlayerSummary label={`♙ ${whiteName}`} annotations={annotations} color="blanc" />
-                <PlayerSummary label={`♟ ${blackName}`} annotations={annotations} color="noir" />
+                <PlayerSummary label={`♙ ${whiteName}`} annotations={annotations} color="blanc" noErrorsLabel={t.no_errors} />
+                <PlayerSummary label={`♟ ${blackName}`} annotations={annotations} color="noir" noErrorsLabel={t.no_errors} />
               </div>
 
               {/* Moments clés */}
@@ -111,7 +113,7 @@ export default function AnalysisDrawer({ annotations, game }) {
                 <>
                   <div style={{ height: 1, background: T.border, marginBottom: 16 }} />
                   <div style={{ fontSize: 11, color: T.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12, fontFamily: T.fontBody }}>
-                    Moments clés
+                    {t.key_moments}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {keyMoves.map((m, i) => {
@@ -136,7 +138,7 @@ export default function AnalysisDrawer({ annotations, game }) {
                           </span>
                           {m.evalDrop !== undefined && m.classification !== 'best' && (
                             <span style={{ color: T.textSecondary, fontSize: 12, fontFamily: T.fontCode }}>
-                              {m.evalDrop > 9000 ? 'mat' : `−${m.evalDrop} cp`}
+                              {m.evalDrop > 9000 ? t.mate : `−${m.evalDrop} cp`}
                             </span>
                           )}
                         </div>
