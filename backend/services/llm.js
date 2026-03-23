@@ -54,7 +54,7 @@ export async function generateCast(pgn, annotationsText = null) {
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
+    max_tokens: 2048,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userContent }],
   });
@@ -87,10 +87,19 @@ export async function generateCast(pgn, annotationsText = null) {
       segments = parseSegments(match[0]);
       console.warn('[llm] Parsing JSON : utilisé extraction de tableau');
     } catch (e2) {
-      // Fallback final : log détaillé + segment vide pour éviter d'envoyer du JSON à ElevenLabs
-      console.error('[llm] Parsing JSON échoué (tentatives 1+2):', e1.message, '|', e2.message);
-      console.error('[llm] Raw output (200 chars):', raw.slice(0, 200));
-      segments = [{ startMove: 0, type: 'transition', text: 'Commentaire non disponible.' }];
+      try {
+        // Tentative 3 : objet unique → envelopper dans un tableau
+        const objMatch = raw.match(/\{[\s\S]*\}/);
+        if (!objMatch) throw new Error('No JSON object found');
+        const parsed = JSON.parse(objMatch[0]);
+        segments = parseSegments(JSON.stringify([parsed]));
+        console.warn('[llm] Parsing JSON : objet unique enveloppé en tableau');
+      } catch (e3) {
+        // Fallback final : log complet pour debug
+        console.error('[llm] Parsing JSON échoué (tentatives 1+2+3):', e1.message, '|', e2.message, '|', e3.message);
+        console.error('[llm] Raw output complet:', raw);
+        segments = [{ startMove: 0, type: 'transition', text: 'Commentaire non disponible.' }];
+      }
     }
   }
 
